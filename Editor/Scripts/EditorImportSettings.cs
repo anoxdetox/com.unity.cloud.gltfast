@@ -20,5 +20,23 @@ namespace GLTFast.Editor
         /// </summary>
         [Tooltip("Generate Lightmap UVs")]
         public bool generateSecondaryUVSet;
+
+        /// <summary>
+        /// Generate mesh LODs automatically for imported meshes.
+        /// </summary>
+        [Tooltip("Generate Mesh LODs")]
+        public bool generateMeshLods;
+
+        /// <summary>
+        /// Maximum number of LOD levels to generate.
+        /// </summary>
+        [Tooltip("Maximum Mesh LOD levels")]
+        public int maximumMeshLod = 32;
+
+        /// <summary>
+        /// LOD generation flags controlling the generation behavior.
+        /// </summary>
+        [Tooltip("Discard odd LOD levels to reduce memory usage")]
+        public bool discardOddLevels = true;
     }
 }

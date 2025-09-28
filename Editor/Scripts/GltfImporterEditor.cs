@@ -171,6 +171,26 @@ namespace GLTFast
 
             root.Bind(serializedObject);
 
+            // Setup conditional visibility for LOD settings
+            var generateMeshLodsToggle = root.Query<Toggle>("GenerateMeshLods").First();
+            var maximumMeshLodField = root.Query<IntegerField>("MaximumMeshLod").First();
+            var discardOddLevelsToggle = root.Query<Toggle>("DiscardOddLevels").First();
+
+            if (generateMeshLodsToggle != null && maximumMeshLodField != null && discardOddLevelsToggle != null)
+            {
+                // Initial state
+                var isLodEnabled = generateMeshLodsToggle.value;
+                maximumMeshLodField.style.display = isLodEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+                discardOddLevelsToggle.style.display = isLodEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+
+                // Update visibility when toggle changes
+                generateMeshLodsToggle.RegisterValueChangedCallback(evt =>
+                {
+                    maximumMeshLodField.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
+                    discardOddLevelsToggle.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
+                });
+            }
+
             var settings = root.Query<VisualElement>(name: "AdvancedSettings").First();
             ImportSettingsEditor.CreateUI(serializedObject, settings.contentContainer, "importSettings.", true);
             InstantiationSettingsEditor.CreateUI(serializedObject, settings.contentContainer, "instantiationSettings.");

@@ -210,6 +210,12 @@ namespace GLTFast.Editor
                         {
                             Unwrapping.GenerateSecondaryUVSet(mesh);
                         }
+
+                        if (editorImportSettings.generateMeshLods)
+                        {
+                            GenerateMeshLods(mesh, editorImportSettings.maximumMeshLod, editorImportSettings.discardOddLevels);
+                        }
+
                         AddObjectToAsset(ctx, $"meshes/{mesh.name}", mesh);
                     }
                 }
@@ -406,6 +412,56 @@ namespace GLTFast.Editor
         {
             var attributes = mesh.GetVertexAttributes();
             return attributes.Any(attribute => attribute.attribute == VertexAttribute.TexCoord1);
+        }
+
+        void GenerateMeshLods(Mesh mesh, int maximumMeshLod, bool discardOddLevels)
+        {
+            if (mesh == null)
+                return;
+
+            // Ensure the mesh is readable for LOD generation
+            if (!mesh.isReadable)
+            {
+                Debug.LogWarning($"Mesh '{mesh.name}' is not readable. Cannot generate LODs.");
+                return;
+            }
+
+            // Ensure the mesh has vertices
+            if (mesh.vertexCount == 0)
+            {
+                Debug.LogWarning($"Mesh '{mesh.name}' has no vertices. Skipping LOD generation.");
+                return;
+            }
+
+            try
+            {
+                // Mark the mesh as dirty before modification
+                EditorUtility.SetDirty(mesh);
+
+                // Set up LOD generation flags
+                var flags = MeshLodUtility.LodGenerationFlags.DiscardOddLevels;
+                if (!discardOddLevels)
+                {
+                    flags = 0;
+                }
+
+                // Generate mesh LODs using Unity's MeshLodUtility with flags
+                MeshLodUtility.GenerateMeshLods(mesh, flags, maximumMeshLod);
+
+                // Recalculate bounds and normals after LOD generation
+                mesh.RecalculateBounds();
+                if (!mesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.Normal))
+                {
+                    mesh.RecalculateNormals();
+                }
+
+                var flagsText = discardOddLevels ? " (discarding odd levels)" : "";
+                Debug.Log($"Successfully generated LODs for mesh '{mesh.name}' with maximum LOD level: {maximumMeshLod}{flagsText}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Failed to generate LODs for mesh '{mesh.name}': {ex.Message}");
+            }
         }
     }
 }

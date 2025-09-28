@@ -8,6 +8,9 @@
         <Style src="GltfImporter-style.uss" />
         <uie:EnumField label="Animation" value="Legacy" binding-path="importSettings.animationMethod" type="GLTFast.AnimationMethod, glTFast" name="Animation" focusable="true" tooltip="Target animation system" />
         <ui:Toggle label="Generate Lightmap UVs" name="SecondaryUVSet" binding-path="editorImportSettings.generateSecondaryUVSet" text="&#x9;" tooltip="Generate lightmap texture coordinates into the second UV channel (if not present)" />
+        <ui:Toggle label="Generate Mesh LODs" name="GenerateMeshLods" binding-path="editorImportSettings.generateMeshLods" text="&#x9;" tooltip="Generate mesh LODs automatically for imported meshes" />
+        <uie:IntegerField label="Maximum Mesh LOD" value="32" name="MaximumMeshLod" binding-path="editorImportSettings.maximumMeshLod" tooltip="Maximum number of LOD levels to generate" />
+        <ui:Toggle label="Discard Odd Levels" name="DiscardOddLevels" binding-path="editorImportSettings.discardOddLevels" text="&#x9;" tooltip="Discard odd LOD levels to reduce memory usage" />
     </ui:VisualElement>
     <ui:VisualElement name="AdvancedSettings" class="section">
         <Style src="GltfImporter-style.uss" />
