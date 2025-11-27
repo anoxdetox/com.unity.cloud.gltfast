@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [6.15.100] - 2025-11-26
 
 ### Changed
-- Setting glTF-pbrMetallicRoughness.shadergraph - Default Color for Metallic and Roughness textures to Black
+- Merged Upstream version 6.15.0
 
 ## [6.14.105] - 2025-11-20
 
