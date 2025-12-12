@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.15.100",
+  "version": "6.15.110",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2022.3",
@@ -26,5 +26,5 @@
     "com.unity.cloud.gltfast.tests": "0.0.0"
   },
   "unityRelease": "67f2",
-  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.14/manual/index.html"
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.15.1/manual/index.html"
 }
