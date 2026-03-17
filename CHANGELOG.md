@@ -4,10 +4,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.17.0] - 2026-03-17
+
+### Added
+- Texture loading is fully customizable via Add-Ons.
+  - Inject support for glTF texture extensions (see [ITextureImageLoader](xref:GLTFast.ITextureImageLoader)).
+  - Customize PNG and Jpeg loading (see [IDefaultImageFormatLoader](xref:GLTFast.IDefaultImageFormatLoader)).
+  - See *ImageAddonTest* scene in the tests package which use the *AddOnsImage* samples from the `DocExamples` directory.
+- Explicit error message when unsupported image format WebP is detected ([LogCode.ImageFormatUnsupported](xref:GLTFast.Logging.LogCode.ImageFormatUnsupported)).
+- [ImageResult](xref:GLTFast.ImageResult) which depicts an imported glTF image.
+- (Test) TextureVariants test glTFs with WebP image format.
+- [Extension.TextureWebP](xref:GLTFast.Extension.TextureWebP) (no general WebP support, just for handling WebP cases).
+
+### Changed
+- (Add-Ons) GltfImport now accepts multiple import add-on instances of the same type.
+  - [GetImportAddonInstance](xref:GLTFast.GltfImportBase.GetImportAddonInstance*) returns the first instance that matches the type.
+- Ensured compatibility with [Fast Enter Play Mode](https://unity.com/blog/engine-platform/enter-play-mode-faster-in-unity-2019-3).
+- Image type detection is based on content (instead of mime-type depicted in glTF JSON, data URI mediatype or file extension).
+- Improved error message when image format is detected, but not supported (e.g. WebP).
+
+### Fixed
+- (Import) [AnisotropicFilterLevel setting](xref:GLTFast.ImportSettings.AnisotropicFilterLevel) is applied to KTX textures as well.
+- (Import) Leak of textures in case of loading errors.
+- (Export) Meshes with zero vertices or indices will now be skipped and an error will be logged instead of an exception being thrown (fixes [#806](https://github.com/atteneder/glTFast/issues/806)).
+
 ## [6.16.1] - 2026-02-19
 
 ### Added
 - (Test) *Empty Scene* test asset.
+- (Import) Support for 16-bit mesh indices reduces memory footprint for meshes with less than 65k vertices per sub-mesh.
+  - 16-bit indices are not converted to 32-bit anymore.
+  - 8-bit indices ar converted to 16-bit (instead of 32-bit).
 
 ### Changed
 - [GltfImport.Load](xref:GLTFast.GltfImportBase.Load*), [GltfImport.InstantiateSceneAsync](xref:GLTFast.GltfImportBase.InstantiateSceneAsync*) and their variants now throw an `OperationCanceledException` when cancelled before completion.
