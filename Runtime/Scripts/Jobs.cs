@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
-using AOT;
 using GLTFast.Vertex;
 using UnityEngine;
 using Unity.Collections;
@@ -14,284 +13,15 @@ using static Unity.Mathematics.math;
 
 namespace GLTFast.Jobs
 {
-
-    using Schema;
-
     [BurstCompile]
-    static unsafe class CachedFunction
+    struct CreateIndicesUInt16Job : IJobParallelFor
     {
+        [WriteOnly]
+        public NativeArray<ushort> result;
 
-        public delegate int GetIndexDelegate(void* baseAddress, int index);
-        public delegate void GetFloat3Delegate(float3* destination, void* src);
-
-        // Cached function pointers
-        static FunctionPointer<GetIndexDelegate> s_GetIndexValueInt8Method;
-        static FunctionPointer<GetIndexDelegate> s_GetIndexValueUInt8Method;
-        static FunctionPointer<GetIndexDelegate> s_GetIndexValueInt16Method;
-        static FunctionPointer<GetIndexDelegate> s_GetIndexValueUInt16Method;
-        static FunctionPointer<GetIndexDelegate> s_GetIndexValueUInt32Method;
-
-
-        static FunctionPointer<GetFloat3Delegate> s_GetFloat3FloatMethod;
-        static FunctionPointer<GetFloat3Delegate> s_GetFloat3Int8Method;
-        static FunctionPointer<GetFloat3Delegate> s_GetFloat3UInt8Method;
-        static FunctionPointer<GetFloat3Delegate> s_GetFloat3Int16Method;
-        static FunctionPointer<GetFloat3Delegate> s_GetFloat3UInt16Method;
-        static FunctionPointer<GetFloat3Delegate> s_GetFloat3UInt32Method;
-        static FunctionPointer<GetFloat3Delegate> s_GetFloat3Int8NormalizedMethod;
-        static FunctionPointer<GetFloat3Delegate> s_GetFloat3UInt8NormalizedMethod;
-        static FunctionPointer<GetFloat3Delegate> s_GetFloat3Int16NormalizedMethod;
-        static FunctionPointer<GetFloat3Delegate> s_GetFloat3UInt16NormalizedMethod;
-        static FunctionPointer<GetFloat3Delegate> s_GetFloat3UInt32NormalizedMethod;
-
-        /// <summary>
-        /// Returns Burst compatible function that retrieves an index value
-        /// </summary>
-        /// <param name="format">Data type of index</param>
-        /// <returns>Burst Function Pointer to correct conversion function</returns>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public static FunctionPointer<GetIndexDelegate> GetIndexConverter(GltfComponentType format)
+        public void Execute(int index)
         {
-            switch (format)
-            {
-                case GltfComponentType.UnsignedByte:
-                    if (!s_GetIndexValueUInt8Method.IsCreated)
-                    {
-                        s_GetIndexValueUInt8Method = BurstCompiler.CompileFunctionPointer<GetIndexDelegate>(GetIndexValueUInt8);
-                    }
-                    return s_GetIndexValueUInt8Method;
-                case GltfComponentType.Byte:
-                    if (!s_GetIndexValueInt8Method.IsCreated)
-                    {
-                        s_GetIndexValueInt8Method = BurstCompiler.CompileFunctionPointer<GetIndexDelegate>(GetIndexValueInt8);
-                    }
-                    return s_GetIndexValueInt8Method;
-                case GltfComponentType.UnsignedShort:
-                    if (!s_GetIndexValueUInt16Method.IsCreated)
-                    {
-                        s_GetIndexValueUInt16Method = BurstCompiler.CompileFunctionPointer<GetIndexDelegate>(GetIndexValueUInt16);
-                    }
-                    return s_GetIndexValueUInt16Method;
-                case GltfComponentType.Short:
-                    if (!s_GetIndexValueInt16Method.IsCreated)
-                    {
-                        s_GetIndexValueInt16Method = BurstCompiler.CompileFunctionPointer<GetIndexDelegate>(GetIndexValueInt16);
-                    }
-                    return s_GetIndexValueInt16Method;
-                case GltfComponentType.UnsignedInt:
-                    if (!s_GetIndexValueUInt32Method.IsCreated)
-                    {
-                        s_GetIndexValueUInt32Method = BurstCompiler.CompileFunctionPointer<GetIndexDelegate>(GetIndexValueUInt32);
-                    }
-                    return s_GetIndexValueUInt32Method;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(format), format, null);
-            }
-        }
-
-        public static FunctionPointer<GetFloat3Delegate> GetPositionConverter(
-            GltfComponentType format,
-            bool normalized
-            )
-        {
-            if (normalized)
-            {
-                switch (format)
-                {
-                    case GltfComponentType.Float:
-                        // Floats cannot be normalized.
-                        // Fall back to non-normalized below
-                        break;
-                    case GltfComponentType.Byte:
-                        if (!s_GetFloat3Int8NormalizedMethod.IsCreated)
-                        {
-                            s_GetFloat3Int8NormalizedMethod = BurstCompiler.CompileFunctionPointer<GetFloat3Delegate>(GetFloat3Int8Normalized);
-                        }
-                        return s_GetFloat3Int8NormalizedMethod;
-                    case GltfComponentType.UnsignedByte:
-                        if (!s_GetFloat3UInt8NormalizedMethod.IsCreated)
-                        {
-                            s_GetFloat3UInt8NormalizedMethod = BurstCompiler.CompileFunctionPointer<GetFloat3Delegate>(GetFloat3UInt8Normalized);
-                        }
-                        return s_GetFloat3UInt8NormalizedMethod;
-                    case GltfComponentType.Short:
-                        if (!s_GetFloat3Int16NormalizedMethod.IsCreated)
-                        {
-                            s_GetFloat3Int16NormalizedMethod = BurstCompiler.CompileFunctionPointer<GetFloat3Delegate>(GetFloat3Int16Normalized);
-                        }
-                        return s_GetFloat3Int16NormalizedMethod;
-                    case GltfComponentType.UnsignedShort:
-                        if (!s_GetFloat3UInt16NormalizedMethod.IsCreated)
-                        {
-                            s_GetFloat3UInt16NormalizedMethod = BurstCompiler.CompileFunctionPointer<GetFloat3Delegate>(GetFloat3UInt16Normalized);
-                        }
-                        return s_GetFloat3UInt16NormalizedMethod;
-                    case GltfComponentType.UnsignedInt:
-                        if (!s_GetFloat3UInt32NormalizedMethod.IsCreated)
-                        {
-                            s_GetFloat3UInt32NormalizedMethod = BurstCompiler.CompileFunctionPointer<GetFloat3Delegate>(GetFloat3UInt32Normalized);
-                        }
-                        return s_GetFloat3UInt32NormalizedMethod;
-                }
-            }
-            switch (format)
-            {
-                case GltfComponentType.Float:
-                    if (!s_GetFloat3FloatMethod.IsCreated)
-                    {
-                        s_GetFloat3FloatMethod = BurstCompiler.CompileFunctionPointer<GetFloat3Delegate>(GetFloat3Float);
-                    }
-                    return s_GetFloat3FloatMethod;
-                case GltfComponentType.Byte:
-                    if (!s_GetFloat3Int8Method.IsCreated)
-                    {
-                        s_GetFloat3Int8Method = BurstCompiler.CompileFunctionPointer<GetFloat3Delegate>(GetFloat3Int8);
-                    }
-                    return s_GetFloat3Int8Method;
-                case GltfComponentType.UnsignedByte:
-                    if (!s_GetFloat3UInt8Method.IsCreated)
-                    {
-                        s_GetFloat3UInt8Method = BurstCompiler.CompileFunctionPointer<GetFloat3Delegate>(GetFloat3UInt8);
-                    }
-                    return s_GetFloat3UInt8Method;
-                case GltfComponentType.Short:
-                    if (!s_GetFloat3Int16Method.IsCreated)
-                    {
-                        s_GetFloat3Int16Method = BurstCompiler.CompileFunctionPointer<GetFloat3Delegate>(GetFloat3Int16);
-                    }
-                    return s_GetFloat3Int16Method;
-                case GltfComponentType.UnsignedShort:
-                    if (!s_GetFloat3UInt16Method.IsCreated)
-                    {
-                        s_GetFloat3UInt16Method = BurstCompiler.CompileFunctionPointer<GetFloat3Delegate>(GetFloat3UInt16);
-                    }
-                    return s_GetFloat3UInt16Method;
-                case GltfComponentType.UnsignedInt:
-                    if (!s_GetFloat3UInt32Method.IsCreated)
-                    {
-                        s_GetFloat3UInt32Method = BurstCompiler.CompileFunctionPointer<GetFloat3Delegate>(GetFloat3UInt32);
-                    }
-                    return s_GetFloat3UInt32Method;
-            }
-            throw new ArgumentOutOfRangeException(nameof(format), format, null);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetIndexDelegate))]
-        static int GetIndexValueUInt8(void* baseAddress, int index)
-        {
-            return *((byte*)baseAddress + index);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetIndexDelegate))]
-        static int GetIndexValueInt8(void* baseAddress, int index)
-        {
-            return *(((sbyte*)baseAddress) + index);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetIndexDelegate))]
-        static int GetIndexValueUInt16(void* baseAddress, int index)
-        {
-            return *(((ushort*)baseAddress) + index);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetIndexDelegate))]
-        static int GetIndexValueInt16(void* baseAddress, int index)
-        {
-            return *(((short*)baseAddress) + index);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetIndexDelegate))]
-        static int GetIndexValueUInt32(void* baseAddress, int index)
-        {
-            return (int)*(((uint*)baseAddress) + index);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3Float(float3* destination, void* src)
-        {
-            destination->x = -*(float*)src;
-            destination->y = *((float*)src + 1);
-            destination->z = *((float*)src + 2);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3Int8(float3* destination, void* src)
-        {
-            destination->x = -*(sbyte*)src;
-            destination->y = *((sbyte*)src + 1);
-            destination->z = *((sbyte*)src + 2);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3UInt8(float3* destination, void* src)
-        {
-            destination->x = -*(byte*)src;
-            destination->y = *((byte*)src + 1);
-            destination->z = *((byte*)src + 2);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3Int16(float3* destination, void* src)
-        {
-            destination->x = -*(short*)src;
-            destination->y = *((short*)src + 1);
-            destination->z = *((short*)src + 2);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3UInt16(float3* destination, void* src)
-        {
-            destination->x = -*(ushort*)src;
-            destination->y = *((ushort*)src + 1);
-            destination->z = *((ushort*)src + 2);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3UInt32(float3* destination, void* src)
-        {
-            destination->x = -*(uint*)src;
-            destination->y = *((uint*)src + 1);
-            destination->z = *((uint*)src + 2);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3Int8Normalized(float3* destination, void* src)
-        {
-            destination->x = -max(*(sbyte*)src / 127f, -1);
-            destination->y = max(*((sbyte*)src + 1) / 127f, -1);
-            destination->z = max(*((sbyte*)src + 2) / 127f, -1);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3UInt8Normalized(float3* destination, void* src)
-        {
-            destination->x = -*(byte*)src / 255f;
-            destination->y = *((byte*)src + 1) / 255f;
-            destination->z = *((byte*)src + 2) / 255f;
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3Int16Normalized(float3* destination, void* src)
-        {
-            destination->x = -max(*(short*)src / (float)short.MaxValue, -1f);
-            destination->y = max(*((short*)src + 1) / (float)short.MaxValue, -1f);
-            destination->z = max(*((short*)src + 2) / (float)short.MaxValue, -1f);
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3UInt16Normalized(float3* destination, void* src)
-        {
-            destination->x = -*(ushort*)src / (float)ushort.MaxValue;
-            destination->y = *((ushort*)src + 1) / (float)ushort.MaxValue;
-            destination->z = *((ushort*)src + 2) / (float)ushort.MaxValue;
-        }
-
-        [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3UInt32Normalized(float3* destination, void* src)
-        {
-            destination->x = -*(uint*)src / (float)uint.MaxValue;
-            destination->y = *((uint*)src + 1) / (float)uint.MaxValue;
-            destination->z = *((uint*)src + 2) / (float)uint.MaxValue;
+            result[index] = (ushort)index;
         }
     }
 
@@ -308,6 +38,18 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
+    struct CreateIndicesUInt16FlippedJob : IJobParallelFor
+    {
+        [WriteOnly]
+        public NativeArray<ushort> result;
+
+        public void Execute(int index)
+        {
+            result[index] = (ushort)(index - 2 * (index % 3 - 1));
+        }
+    }
+
+    [BurstCompile]
     struct CreateIndicesUInt32FlippedJob : IJobParallelFor
     {
         [WriteOnly]
@@ -320,7 +62,32 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    struct CreateIndicesForTriangleStripJob : IJobParallelFor
+    struct CreateIndicesForTriangleStripUInt16Job : IJobParallelFor
+    {
+        [WriteOnly]
+        public NativeArray<ushort> result;
+
+        public void Execute(int index)
+        {
+            // Source https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
+            // Triangle Strips
+            // One triangle primitive is defined by each vertex and the two vertices that follow it, according to the equation:
+            // pi = { vi, vi + (1 + i % 2), vi + (2 - i % 2)}
+            // We swap the second and third indices for Unity
+
+            var triangleIndex = index / 3;
+            result[index] = (index % 3) switch
+            {
+                0 => (ushort)(triangleIndex),
+                1 => (ushort)(triangleIndex + (2 - triangleIndex % 2)),
+                2 => (ushort)(triangleIndex + (1 + triangleIndex % 2)),
+                _ => result[index]
+            };
+        }
+    }
+
+    [BurstCompile]
+    struct CreateIndicesForTriangleStripUInt32Job : IJobParallelFor
     {
         [WriteOnly]
         public NativeArray<uint> result;
@@ -336,16 +103,40 @@ namespace GLTFast.Jobs
             var triangleIndex = index / 3;
             result[index] = (index % 3) switch
             {
-                0 => (uint)(triangleIndex + (1 + triangleIndex % 2)),
-                1 => (uint)(triangleIndex),
-                2 => (uint)(triangleIndex + (2 - triangleIndex % 2)),
+                0 => (uint)triangleIndex,
+                1 => (uint)(triangleIndex + 2 - triangleIndex % 2),
+                2 => (uint)(triangleIndex + 1 + triangleIndex % 2),
                 _ => result[index]
             };
         }
     }
 
     [BurstCompile]
-    struct CreateIndicesForTriangleFanJob : IJobParallelFor
+    struct CreateIndicesForTriangleFanUInt16Job : IJobParallelFor
+    {
+        [WriteOnly]
+        public NativeArray<ushort> result;
+
+        public void Execute(int index)
+        {
+            // Source https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
+            // Triangle Fans
+            // Triangle primitives are defined around a shared common vertex, according to the equation:
+            // pi = {vi+1, vi+2, v0}
+            // We change first and second indices for Unity
+
+            var triangleIndex = index / 3;
+            result[index] = (index % 3) switch
+            {
+                0 => (ushort)(triangleIndex + 2),
+                1 => (ushort)(triangleIndex + 1),
+                _ => 0
+            };
+        }
+    }
+
+    [BurstCompile]
+    struct CreateIndicesForTriangleFanUInt32Job : IJobParallelFor
     {
         [WriteOnly]
         public NativeArray<uint> result;
@@ -369,50 +160,56 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    struct RecalculateIndicesForTriangleStripJob : IJobParallelFor
+    struct RecalculateIndicesForTriangleStripInPlaceJob<T> : IJob where T : struct
     {
-        [ReadOnly]
-        public NativeArray<uint> input;
+        public NativeArray<T> indices;
 
-        [WriteOnly, NativeDisableParallelForRestriction]
-        public NativeArray<uint> result;
-
-        public void Execute(int index)
+        public void Execute()
         {
-            // Source https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
-            // Triangle Strips
-            // One triangle primitive is defined by each vertex and the two vertices that follow it, according to the equation:
-            // pi = { vi, vi + (1 + i % 2), vi + (2 - i % 2)}
-            // We change first and second indices for Unity
-
-            var triangleIndex = index * 3;
-            result[triangleIndex + 1] = input[index];
-            result[triangleIndex] = input[index + (1 + index % 2)];
-            result[triangleIndex + 2] = input[index + (2 - index % 2)];
+            var lastTriangleIndex = indices.Length / 3 - 1;
+            for (var i = lastTriangleIndex; i > 0; i--)
+            {
+                var mod = i % 2;
+                indices[i * 3 + 1 + mod] = indices[2 + i];
+                indices[i * 3 + 2 - mod] = indices[1 + i];
+                indices[i * 3] = indices[i];
+            }
+            (indices[2], indices[1]) = (indices[1], indices[2]);
         }
     }
 
     [BurstCompile]
-    struct RecalculateIndicesForTriangleFanJob : IJobParallelFor
+    struct RecalculateIndicesForTriangleFanInPlaceJob<T> : IJob where T : struct
+    {
+        public NativeArray<T> indices;
+
+        public void Execute()
+        {
+            var triangleCount = indices.Length / 3;
+            var pivot = indices[0];
+            for (var i = triangleCount - 1; i > 0; i--)
+            {
+                var triangleIndex = i * 3;
+                indices[triangleIndex + 2] = pivot;
+                indices[triangleIndex + 1] = indices[i + 1];
+                indices[triangleIndex] = indices[i + 2];
+            }
+            (indices[2], indices[0]) = (indices[0], indices[2]);
+        }
+    }
+
+    [BurstCompile]
+    struct ConvertIndicesUInt8ToUInt16Job : IJobParallelFor
     {
         [ReadOnly]
-        public NativeArray<uint> input;
+        public NativeArray<byte>.ReadOnly input;
 
-        [WriteOnly, NativeDisableParallelForRestriction]
-        public NativeArray<uint> result;
+        [WriteOnly]
+        public NativeArray<ushort> result;
 
         public void Execute(int index)
         {
-            // Source https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
-            // Triangle Fans
-            // Triangle primitives are defined around a shared common vertex, according to the equation:
-            // pi = {vi+1, vi+2, v0}
-            // We change first and second indices for Unity
-
-            var triangleIndex = index * 3;
-            result[triangleIndex + 1] = input[index + 1];
-            result[triangleIndex] = input[index + 2];
-            result[triangleIndex + 2] = 0;
+            result[index] = input[index];
         }
     }
 
@@ -432,32 +229,62 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    struct ConvertIndicesUInt8ToInt32FlippedJob : IJobParallelFor
+    struct ConvertIndicesUInt8ToUInt16FlippedJob : IJobParallelFor
     {
         [ReadOnly]
         public NativeArray<byte3>.ReadOnly input;
 
         [WriteOnly]
-        public NativeArray<int3> result;
+        public NativeArray<ushort3> result;
 
         public void Execute(int index)
         {
-            result[index] = input[index].GltfToUnityTriangleIndies();
+            result[index] = input[index].GltfToUnityTriangleIndicesUInt16();
         }
     }
 
     [BurstCompile]
-    struct ConvertIndicesUInt16ToInt32FlippedJob : IJobParallelFor
+    struct ConvertIndicesUInt8ToUInt32FlippedJob : IJobParallelFor
+    {
+        [ReadOnly]
+        public NativeArray<byte3>.ReadOnly input;
+
+        [WriteOnly]
+        public NativeArray<uint3> result;
+
+        public void Execute(int index)
+        {
+            result[index] = input[index].GltfToUnityTriangleIndices();
+        }
+    }
+
+    [BurstCompile]
+    struct ConvertIndicesUInt16ToUInt16FlippedJob : IJobParallelFor
     {
         [ReadOnly]
         public NativeArray<ushort3>.ReadOnly input;
 
         [WriteOnly]
-        public NativeArray<int3> result;
+        public NativeArray<ushort3> result;
 
         public void Execute(int index)
         {
-            result[index] = input[index].GltfToUnityTriangleIndies();
+            result[index] = input[index].GltfToUnityTriangleIndicesUInt16();
+        }
+    }
+
+    [BurstCompile]
+    struct ConvertIndicesUInt16ToUInt32FlippedJob : IJobParallelFor
+    {
+        [ReadOnly]
+        public NativeArray<ushort3>.ReadOnly input;
+
+        [WriteOnly]
+        public NativeArray<uint3> result;
+
+        public void Execute(int index)
+        {
+            result[index] = input[index].GltfToUnityTriangleIndices();
         }
     }
 
@@ -477,18 +304,18 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    struct ConvertIndicesUInt32ToInt32FlippedJob : IJobParallelFor
+    struct ConvertIndicesUInt32ToUInt32FlippedJob : IJobParallelFor
     {
         [ReadOnly]
         public NativeArray<uint3>.ReadOnly input;
 
         [WriteOnly]
-        public NativeArray<int3> result;
+        public NativeArray<uint3> result;
 
         public void Execute(int index)
         {
             var idx = input[index];
-            result[index] = new int3((int)idx.x, (int)idx.z, (int)idx.y);
+            result[index] = new uint3(idx.x, idx.z, idx.y);
         }
     }
 

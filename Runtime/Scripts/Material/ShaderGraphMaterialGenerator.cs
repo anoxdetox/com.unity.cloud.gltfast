@@ -93,6 +93,7 @@ namespace GLTFast.Materials {
 
         const string k_OcclusionKeyword = "_OCCLUSION";
         const string k_EmissiveKeyword = "_EMISSIVE";
+        const string k_SpecularSetupKeyword = "_SPECULAR_SETUP";
 
         static readonly int k_BaseMapPropId = Shader.PropertyToID("baseColorTexture");
         static readonly int k_BaseMapScaleTransformPropId = Shader.PropertyToID("baseColorTexture_ST"); //TODO: support in shader!
@@ -220,6 +221,7 @@ namespace GLTFast.Materials {
                 materialType = MaterialType.SpecularGlossiness;
                 var specularShaderFeatures = GetSpecularShaderFeatures(gltfMaterial);
                 material = GetSpecularMaterial(specularShaderFeatures);
+                material?.EnableKeyword(k_SpecularSetupKeyword);
                 if ((specularShaderFeatures & SpecularShaderFeatures.AlphaBlend) != 0) {
                     shaderMode = ShaderMode.Blend;
                 }
@@ -640,6 +642,20 @@ namespace GLTFast.Materials {
             }
             return feature;
         }
+
+#if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStaticsOnLoad()
+        {
+            // Reset static state
+            s_MetallicShader = null;
+            s_SpecularShader = null;
+            s_UnlitShader = null;
+            s_MetallicShaderQueried = false;
+            s_SpecularShaderQueried = false;
+            s_UnlitShaderQueried = false;
+        }
+#endif
     }
 }
 #endif // GLTFAST_SHADER_GRAPH

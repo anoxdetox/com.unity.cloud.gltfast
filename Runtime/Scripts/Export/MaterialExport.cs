@@ -29,10 +29,19 @@ namespace GLTFast.Export
                 switch (renderPipeline)
                 {
                     case RenderPipeline.BuiltIn:
+#if UNITY_SHADER_GRAPH && GLTFAST_BUILTIN_SHADER_GRAPH
+                        s_MaterialExport = MetaMaterialExportShaderGraphs<
+                            StandardMaterialExport,
+                            GltfShaderGraphMaterialExporter
+                        >.Instance;
+#else
+                        s_MaterialExport = MetaMaterialExportBuiltIn.Instance;
+#endif
+                        break;
                     case RenderPipeline.Universal:
 #if UNITY_SHADER_GRAPH
                         s_MaterialExport = MetaMaterialExportShaderGraphs<
-                            StandardMaterialExport,
+                            LitMaterialExport,
                             GltfShaderGraphMaterialExporter
                         >.Instance;
 #else
@@ -76,5 +85,14 @@ namespace GLTFast.Export
             textureId = gltf.AddTexture(imageId, samplerId);
             return true;
         }
+
+#if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStaticsOnLoad()
+        {
+            // Reset static state
+            s_MaterialExport = null;
+        }
+#endif
     }
 }
